@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 from random import choice, randint, shuffle
 import pyperclip
+import json
 
 
 
@@ -38,25 +39,51 @@ def save_password():
     website = web_entry.get()
     password = pass_entry.get()
     email_username = email_entry.get()
+    new_data = { 
+        website:{
+            "email": email_username, 
+            "password": password, 
+
+        }
+    }
 
 
     if len(website) == 0 or len(password) ==0:
         empty_field = messagebox.showerror(title="ERROR", message="Please fill out all fields")
     else:
-        validate_data = messagebox.askokcancel(title=website, message=f"These are the deatails entered: \n"
-                                            f" Email: {email_username}\n Password: {password}\n"
-                                            f"Is it ok to save.")
-        if validate_data:
-            with open("password_log.txt", "a+") as password_file:
-                password_file.write(f"Website: {website} Email/Username:  {email_username} Password:  {password} \n")
-                web_entry.delete(0 ,"end")
-                pass_entry.delete(0,"end")
+        try:
+            with open("password_log.json", "r") as password_file:
+                data = json.load(password_file)
+        except:
+            with open("password_log.json", "w") as password_file:
+                json.dump(new_data, password_file, indent=4)
+        else:
+            data.update(new_data)
+
+            with open("password_log.json", "w") as password_file:
+                json.dump(data, password_file, indent=4)
+
+        finally:
+            web_entry.delete(0 ,"end")
+            pass_entry.delete(0,"end")
 
 
-    
+# --------------------------Search function --------------------------- #
 
-   
-
+def find_password():
+    website = web_entry.get()
+    try:
+        with open("password_log.json") as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="No Data File Found.")
+    else:
+        if website in data:
+            email = data[website]["email"]
+            password = data[website]["password"]
+            messagebox.showinfo(title=website, message=f"Email: {email}\nPassword: {password}")
+        else:
+            messagebox.showinfo(title="Error", message=f"No details for {website} exists.")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -66,7 +93,7 @@ window.title("Password Manager")
 window.config(padx=50, pady=50)
 
 
-canvas = Canvas(width=200, height=200, highlightthickness=0)
+canvas = Canvas(width=200, height=200)
 lock_img = PhotoImage(file="logo.png")
 canvas.create_image(100, 100, image=lock_img)
 canvas.grid(column=1, row=0)
@@ -76,8 +103,8 @@ canvas.grid(column=1, row=0)
 web_label = Label(text="Website:")
 web_label.grid(column=0, row=1)
 # Website Entry 
-web_entry = Entry(width=35)
-web_entry.grid(column=1, row=1, columnspan=2)
+web_entry = Entry(width=21)
+web_entry.grid(column=1, row=1)
 
 
 # Label for email/username input
@@ -100,6 +127,11 @@ pass_entry.grid(column=1, row=3)
 #generate Password Button 
 gen_pass = Button(text=("Generate Password"), command=generate_password)
 gen_pass.grid(column=2, row=3)
+
+
+#Search Button 
+search_button = Button(text=("Search"), width=13, command=find_password)
+search_button.grid(column=2, row=1)
 
 
 # Add button
